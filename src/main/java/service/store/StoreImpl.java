@@ -64,6 +64,7 @@ public class StoreImpl implements Store,Runnable{
                 if (!queue.isEmpty()) {
                     Object o = queue.poll();
                     Environment environment = (Environment) o;
+                    System.out.println(environment);
                     environments.add(environment);
                     ps.setString(1, environment.getSrc_id());
                     ps.setString(2, environment.getDst_id());
@@ -82,7 +83,9 @@ public class StoreImpl implements Store,Runnable{
                     }
                 }
             }
-            ps.executeUpdate();
+            if(count%1000!=0){
+                ps.executeUpdate();
+            }
             conn.commit();
             Log4JFactroy.getConsoleLog().info("入库成功，本次提交了"+count+"条数据");
             Log4JFactroy.getFileLog().info("入库成功，本次提交了"+count+"条数据");
@@ -120,7 +123,7 @@ public class StoreImpl implements Store,Runnable{
                 connection = getConn();
                 connection.setAutoCommit(false);
                 String sql = "insert envs(src_id,dst_id,dev_id,sensor_id,counter,cmd_type,data_type,data,status,gather_time) value(?,?,?,?,?,?,?,?,?,?)";
-                PreparedStatement ps = conn.prepareStatement(sql);
+                PreparedStatement ps = connection.prepareStatement(sql);
                 int fl = 0;
                 for(Environment e:environments) {
                     ps.setString(1, e.getSrc_id());
@@ -140,7 +143,7 @@ public class StoreImpl implements Store,Runnable{
                     }
                 }
                 ps.executeUpdate();
-                conn.commit();
+                connection.commit();
                 Log4JFactroy.getConsoleLog().info("入库成功，本次提交了"+fl+"条数据");
                 Log4JFactroy.getFileLog().info("入库成功，本次提交了"+fl+"条数据");
                 System.out.println("入库成功，本次提交了" + fl + "条数据");
@@ -154,6 +157,9 @@ public class StoreImpl implements Store,Runnable{
                         ex.printStackTrace();
                     }
                 }
+                Log4JFactroy.getConsoleLog().error(e.getMessage());
+                Log4JFactroy.getFileLog().error(e.getMessage());
+                e.printStackTrace();
             }
             backup.backup(environments, storefile);
             System.out.println("此次存入服务端备份数据" + environments.size() + "条");
